@@ -242,6 +242,7 @@ document.getElementById("viewGuide").classList.toggle("hidden", tab !== "guide")
 }
 function login(u, p) {
 currentUser = ${u}_${p};
+currentUser = u + "_" + p;
 document.getElementById("displayUser").textContent = u;
 document.getElementById("loginScreen").classList.add("hidden");
 document.getElementById("appScreen").classList.remove("hidden");
