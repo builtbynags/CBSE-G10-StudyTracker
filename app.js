@@ -1,5 +1,3 @@
-import { initializeApp } from "https://gstatic.com";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://gstatic.com";
 import { firebaseConfig } from "./firebase-config.js";
 
 if (!window.UI || !window.CORE_DATA || !window.BOOSTER_DATA) {
@@ -10,22 +8,44 @@ if (!window.UI || !window.CORE_DATA || !window.BOOSTER_DATA) {
 
 const SYLLABUS = { ...window.CORE_DATA, ...window.BOOSTER_DATA.syllabus };
 const STEPS = window.BOOSTER_DATA.stepsMeta;
-let db = null, currentUser = "", activeSub = "Mathematics", state = { checks: {}, notes: {} }, sec = 1500, tInt = null;
+let db = null, fsMod = null, currentUser = "", activeSub = "Mathematics", state = { checks: {}, notes: {} }, sec = 1500, tInt = null;
 
-try {
-  if (firebaseConfig && firebaseConfig.apiKey) {
-    db = getFirestore(initializeApp(firebaseConfig));
+async function initFirebase() {
+  try {
+    if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
+      const base = "https://gstatic.com";
+      const appMod = await import(base + "firebase-app.js");
+      fsMod = await import(base + "firebase-firestore.js");
+      db = fsMod.getFirestore(appMod.initializeApp(firebaseConfig));
+      if (currentUser) listenCloud();
+    }
+  } catch (err) {
+    console.error("Firebase load error:", err);
   }
-} catch (err) {
-  console.error("Firebase init error:", err);
 }
 
 async function save() {
   localStorage.setItem(`cbse_${currentUser}`, JSON.stringify(state));
-  if (db && currentUser) {
-    await setDoc(doc(db, "trackers", currentUser.toLowerCase()), state, { merge: true });
+  if (db && fsMod && currentUser) {
+    await fsMod.setDoc(fsMod.doc(db, "trackers", currentUser.toLowerCase()), state, { merge: true });
     document.getElementById("syncStatus").textContent = "Cloud Synced";
+    document.getElementById("syncStatus").className = "text-xs font-semibold text-emerald-600 ml-2";
   }
+}
+
+function listenCloud() {
+  if (!db || !fsMod || !currentUser) return;
+  fsMod.onSnapshot(fsMod.doc(db, "trackers", currentUser.toLowerCase()), snap => {
+    if (snap.exists()) {
+      state = { checks: snap.data().checks || {}, notes: snap.data().notes || {} };
+      localStorage.setItem(`cbse_${currentUser}`, JSON.stringify(state));
+      render();
+      document.getElementById("syncStatus").textContent = "Live Cloud Synced";
+      document.getElementById("syncStatus").className = "text-xs font-semibold text-emerald-600 ml-2";
+    } else {
+      save();
+    }
+  });
 }
 
 function render() {
@@ -47,7 +67,8 @@ function render() {
   if (overdue.length) {
     bSec.classList.remove("hidden");
     document.getElementById("backlogCount").textContent = overdue.length;
-    document.getElementById("backlogList").innerHTML = overdue.map(i => `<div class="bg-white p-2 rounded-lg border text-xs font-bold">${i.s}: ${i.name} (${i.done}/5)</div>`).join("");
+    document.getElementById("backlogList").innerHTML = overdue.map(i => `<div data-s="${i.s}" class="b-card cursor-pointer bg-white p-2 rounded-lg border text-xs font-bold">${i.s}: ${i.name} (${i.done}/5)</div>`).join("");
+    document.querySelectorAll(".b-card").forEach(c => c.onclick = () => { activeSub = c.dataset.s; render(); });
   } else bSec.classList.add("hidden");
 
   document.getElementById("chaptersContainer").innerHTML = SYLLABUS[activeSub].map(c => {
@@ -78,7 +99,7 @@ function login(u, p) {
   document.getElementById("appScreen").classList.remove("hidden");
   const loc = localStorage.getItem(`cbse_${currentUser}`);
   if (loc) state = JSON.parse(loc);
-  if (db) onSnapshot(doc(db, "trackers", currentUser.toLowerCase()), snap => { if (snap.exists()) { state = snap.data(); render(); } else save(); });
+  listenCloud();
   render();
 }
 
@@ -92,3 +113,4 @@ document.getElementById("logoutBtn").onclick = () => { localStorage.removeItem("
 document.getElementById("timerBtn").onclick = () => { if (tInt) { clearInterval(tInt); tInt = null; } else tInt = setInterval(() => { if (--sec <= 0) { clearInterval(tInt); alert("Sprint Done!"); } document.getElementById("timerDisplay").textContent = `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`; }, 1000); };
 document.getElementById("resetTimerBtn").onclick = () => { clearInterval(tInt); tInt = null; sec = 1500; document.getElementById("timerDisplay").textContent = "25:00"; };
 const s = localStorage.getItem("cbse_sess"); if (s) { const { u, p } = JSON.parse(s); login(u, p); }
+initFirebase();
