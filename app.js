@@ -13,7 +13,7 @@ let db = null, fsMod = null, currentUser = "", activeSub = "Mathematics", state 
 async function initFirebase() {
   try {
     if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
-      const base = "https://gstatic.com";
+      const base = ["https:", "", "://gstatic.com", "firebasejs", "10.12.2"].join("/") + "/";
       const appMod = await import(base + "firebase-app.js");
       fsMod = await import(base + "firebase-firestore.js");
       db = fsMod.getFirestore(appMod.initializeApp(firebaseConfig));
@@ -54,7 +54,7 @@ function render() {
   ).join("");
   document.querySelectorAll(".tab").forEach(b => b.onclick = () => { activeSub = b.dataset.s; render(); });
 
-  let banked = 0, overdue = [], today = new Date().toISOString().split("T")[0];
+  let banked = 0, overdue = [], today = new Date().toISOString().split("T");
   ["Mathematics", "Science", "Social Science"].forEach(s => SYLLABUS[s].forEach(c => {
     const done = STEPS.filter(st => state.checks[`${c.id}_${st.key}`]).length;
     banked += c.marks * (done / 5);
