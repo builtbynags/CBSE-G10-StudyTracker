@@ -2,13 +2,22 @@ import { initializeApp } from "https://gstatic.com";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://gstatic.com";
 import { firebaseConfig } from "./firebase-config.js";
 
-window.UI.renderShell();
+if (!window.UI || !window.CORE_DATA || !window.BOOSTER_DATA) {
+  document.getElementById("root").innerHTML = `<div style="padding:20px;color:red;font-weight:bold;">Check that ui.js, core-data.js, and booster-data.js are saved properly!</div>`;
+} else {
+  window.UI.renderShell();
+}
+
 const SYLLABUS = { ...window.CORE_DATA, ...window.BOOSTER_DATA.syllabus };
 const STEPS = window.BOOSTER_DATA.stepsMeta;
 let db = null, currentUser = "", activeSub = "Mathematics", state = { checks: {}, notes: {} }, sec = 1500, tInt = null;
 
-if (firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
-  db = getFirestore(initializeApp(firebaseConfig));
+try {
+  if (firebaseConfig && firebaseConfig.apiKey) {
+    db = getFirestore(initializeApp(firebaseConfig));
+  }
+} catch (err) {
+  console.error("Firebase init error:", err);
 }
 
 async function save() {
