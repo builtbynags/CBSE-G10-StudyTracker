@@ -13,7 +13,8 @@ let db = null, fsMod = null, currentUser = "", activeSub = "Mathematics", state 
 async function initFirebase() {
   try {
     if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
-      const base = ["https:", "", "://gstatic.com", "firebasejs", "10.12.2"].join("/") + "/";
+      const base = "https://" + "www.gstatic" + ".com/firebasejs/10.12.2/";
+
       const appMod = await import(base + "firebase-app.js");
       fsMod = await import(base + "firebase-firestore.js");
       db = fsMod.getFirestore(appMod.initializeApp(firebaseConfig));
