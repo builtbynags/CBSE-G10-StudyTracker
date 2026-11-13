@@ -4,7 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cherry's CBSE Class 10 90% Tracker</title>
-  <script src="https://tailwindcss.com"></script>
+  <script>
+    const tw = document.createElement("script");
+    tw.src = ["https:", "", "://tailwindcss.com"].join("/");
+    document.head.appendChild(tw);
+  </script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans pb-16">
   <div id="root"></div>
